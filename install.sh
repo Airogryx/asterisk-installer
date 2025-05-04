@@ -28,6 +28,11 @@ show_progress() {
   echo -e "${YELLOW}${message}${NC}\r"
 }
 
+# Function to disable user input
+disable_input() {
+  stty -echo
+}
+
 # Function to re-enable user input
 restore_input() {
   stty echo
@@ -46,7 +51,7 @@ install_dependencies() {
 trap cleanup EXIT
 
 # Disable user input
-stty -echo
+disable_input
 
 # Check if the script is run as root
 if [ "$(id -u)" -ne 0 ]; then
@@ -73,7 +78,7 @@ fi
 if command -v asterisk > /dev/null 2>&1; then
   echo -e "${GREEN}Asterisk is already installed.${NC}"
   restore_input
-  exit 1
+  exit 0
 fi
 
 # Clear the terminal screen at the start
@@ -113,6 +118,11 @@ contrib/scripts/install_prereq install > /dev/null 2>&1
 show_progress "Configuring Asterisk for building..."
 ./configure > /dev/null 2>&1
 
+# Enable OPUS codec
+show_progress "Enabling OPUS codec..."
+make menuselect.makeopts > /dev/null 2>&1
+menuselect/menuselect --enable codec_opus menuselect.makeopts > /dev/null 2>&1
+
 # Build and install Asterisk
 show_progress "Building and installing Asterisk..."
 make -j"$(nproc)" > /dev/null 2>&1
@@ -137,3 +147,6 @@ echo -e "${GREEN}Asterisk PBX has been successfully installed!${NC}\n"
 
 # Re-enable user input at the end of the script
 restore_input
+
+# Exit the script
+exit 0
